@@ -22,7 +22,7 @@ import os
 SEED = 42
 rng = np.random.default_rng(SEED)
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# ── Config 
 FLEET_SIZE    = 600          # vehicles at start; grows to ~750 by end
 LOCATIONS     = ["North", "South", "East", "West", "Central"]
 VEHICLE_TYPES = ["Compact", "Mid-Size", "Full-Size", "SUV", "Truck"]
@@ -31,7 +31,7 @@ END_DATE      = date(2024, 6, 30)
 
 OUT_DIR = os.path.dirname(__file__)
 
-# ── Vehicles ──────────────────────────────────────────────────────────────────
+# ── Vehicles 
 def build_vehicles(n: int) -> pd.DataFrame:
     makes = {
         "Compact":   ["Toyota Corolla", "Honda Civic", "Hyundai Elantra"],
@@ -57,7 +57,7 @@ def build_vehicles(n: int) -> pd.DataFrame:
     })
 
 
-# ── Daily Utilization ─────────────────────────────────────────────────────────
+# ── Daily Utilization 
 def build_utilization(vehicles: pd.DataFrame) -> pd.DataFrame:
     records = []
     dates   = [START_DATE + timedelta(d)
@@ -93,14 +93,14 @@ def build_utilization(vehicles: pd.DataFrame) -> pd.DataFrame:
                 "vehicle_type":    v["vehicle_type"],
                 "available_hours": available_hrs[i],
                 "hours_used":      hours_used[i],
-                "miles_driven":    max(0, miles[i]),
+                "miles_driven":    miles[i],
                 "utilization_rate": round(util[i], 4),
             })
 
     return pd.DataFrame(records)
 
 
-# ── Staff Overtime ────────────────────────────────────────────────────────────
+# ── Staff Overtime 
 def build_overtime(n_employees: int = 220) -> pd.DataFrame:
     records = []
     dates   = [START_DATE + timedelta(d)
@@ -138,7 +138,7 @@ def build_overtime(n_employees: int = 220) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-# ── Maintenance Records ───────────────────────────────────────────────────────
+# ── Maintenance Records 
 def build_maintenance(vehicles: pd.DataFrame) -> pd.DataFrame:
     records = []
     maintenance_types = {
@@ -170,7 +170,7 @@ def build_maintenance(vehicles: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Main 
 if __name__ == "__main__":
     print("Generating fleet data…")
 
@@ -179,6 +179,7 @@ if __name__ == "__main__":
     overtime    = build_overtime()
     maintenance = build_maintenance(vehicles)
 
+    os.makedirs(OUT_DIR, exist_ok=True)
     vehicles.to_csv(   f"{OUT_DIR}/fleet_vehicles.csv",     index=False)
     utilization.to_csv(f"{OUT_DIR}/daily_utilization.csv",  index=False)
     overtime.to_csv(   f"{OUT_DIR}/staff_overtime.csv",     index=False)
