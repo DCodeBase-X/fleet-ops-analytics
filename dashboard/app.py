@@ -10,23 +10,25 @@ Run:
 """
 
 import os
-import sys
+from click import option
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from streamlit_option_menu import option_menu
 
-# ── Page config ───────────────────────────────────────────────────────────────
+
+# ── Page config 
 st.set_page_config(
     page_title="Fleet Ops Analytics",
-    page_icon="🚗",
+    page_icon="⚙︎",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── Data loading ──────────────────────────────────────────────────────────────
+# ── Data loading 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
 @st.cache_data(show_spinner="Loading fleet data…")
@@ -37,16 +39,13 @@ def load_data():
     veh   = pd.read_csv(f"{DATA_DIR}/fleet_vehicles.csv",      parse_dates=["acquired_date"])
     return util, ot, maint, veh
 
-# Check data exists
-if not os.path.exists(f"{DATA_DIR}/daily_utilization.csv"):
-    st.error(
-        "**Data not found.** Run `python data/generate_data.py` first to generate the dataset."
-    )
+try:
+    util, ot, maint, veh = load_data()
+except FileNotFoundError as e:
+    st.error(f"**Data not found:** {e}. Run `python data/generate_data.py` first.")
     st.stop()
 
-util, ot, maint, veh = load_data()
-
-# ── Sidebar filters ───────────────────────────────────────────────────────────
+# ── Sidebar filters 
 st.sidebar.title("Fleet Ops Analytics")
 st.sidebar.caption("Data-first operations intelligence")
 st.sidebar.divider()
@@ -61,6 +60,10 @@ date_range    = st.sidebar.date_input(
 )
 
 # Apply filters
+if len(date_range) < 2:
+    st.warning("Please select a complete date range.")
+    st.stop()
+    
 start, end = pd.Timestamp(date_range[0]), pd.Timestamp(date_range[1])
 u_f = util[(util["date"] >= start) & (util["date"] <= end)]
 o_f = ot[  (ot["date"]   >= start) & (ot["date"]   <= end)]
@@ -71,19 +74,23 @@ if selected_loc != "All Locations":
     o_f = o_f[o_f["location"] == selected_loc]
     m_f = m_f[m_f["location"] == selected_loc]
 
+if u_f.empty:
+    st.warning("No data for the selected filters. Adjust the date range or location.")
+    st.stop()
+
 OT_PREMIUM = 28.0  # blended $/hr overtime premium
 
-# ── Navigation tabs ───────────────────────────────────────────────────────────
+# ── Navigation tabs 
 tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 Executive Overview",
-    "⏱ Overtime Analysis",
-    "🚗 Fleet Utilization",
-    "🔧 Maintenance & Capacity",
+    "Executive Overview",
+    "Overtime Analysis",
+    "Fleet Utilization",
+    "Maintenance & Capacity",
 ])
 
-# ══════════════════════════════════════════════════════════════════════════════
+ 
 # TAB 1 — EXECUTIVE OVERVIEW
-# ══════════════════════════════════════════════════════════════════════════════
+ 
 with tab1:
     st.header("Executive Overview")
     st.caption("Top-line KPIs across the filtered period and location.")
@@ -105,7 +112,7 @@ with tab1:
               delta=f"{avg_util - baseline_util:+.1f}pp vs overall",
               delta_color="normal")
     k3.metric("Total OT Cost",       f"${ot_cost:,.0f}",
-              delta=f"${(o_f['overtime_hours'].mean() - baseline_ot) * OT_PREMIUM * 1000:+,.0f} vs baseline",
+              delta=f"${(o_f['overtime_hours'].mean() - baseline_ot) * OT_PREMIUM:+,.2f}/shift vs baseline",
               delta_color="inverse")
     k4.metric("Maintenance Spend",   f"${total_maint:,.0f}")
 
@@ -154,9 +161,9 @@ with tab1:
         st.plotly_chart(fig2, use_container_width=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+ 
 # TAB 2 — OVERTIME ANALYSIS
-# ══════════════════════════════════════════════════════════════════════════════
+ 
 with tab2:
     st.header("Overtime Analysis")
     st.caption("Root-cause breakdown of overtime cost drivers by location, role, and time.")
@@ -209,7 +216,7 @@ with tab2:
             title="Avg OT Hours by Day of Week",
             labels={"overtime_hours": "Avg OT Hours", "day": ""},
             color="overtime_hours",
-            color_continuous_scale=["#E0E7FF", "#818CF8"],
+            color_continuous_scale=["#E0E7FF", "#4F46E5"],
         )
         fig2.update_layout(coloraxis_showscale=False, margin=dict(t=40, b=0))
         st.plotly_chart(fig2, use_container_width=True)
@@ -244,9 +251,9 @@ with tab2:
     st.plotly_chart(fig3, use_container_width=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+ 
 # TAB 3 — FLEET UTILIZATION
-# ══════════════════════════════════════════════════════════════════════════════
+ 
 with tab3:
     st.header("Fleet Utilization")
     st.caption("Vehicle availability, efficiency rates, and idle asset identification.")
@@ -318,9 +325,9 @@ with tab3:
     st.plotly_chart(fig3, use_container_width=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+ 
 # TAB 4 — MAINTENANCE & CAPACITY
-# ══════════════════════════════════════════════════════════════════════════════
+ 
 with tab4:
     st.header("Maintenance & Capacity Planning")
     st.caption("Downtime impact, maintenance cost breakdown, and fleet growth tracking.")
@@ -394,6 +401,6 @@ with tab4:
     st.plotly_chart(fig3, use_container_width=True)
 
 
-# ── Footer ────────────────────────────────────────────────────────────────────
+# ── Footer 
 st.sidebar.divider()
 st.sidebar.caption("Built by Damarius McNair · [GitHub](https://github.com/DCodeBase-X)")
