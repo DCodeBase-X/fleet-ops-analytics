@@ -1,6 +1,6 @@
 """
 Fleet Operations Analytics Dashboard
-=====================================
+
 A Streamlit dashboard modeling the data-first operations approach
 used to reduce overtime costs by 23% and improve staffing efficiency
 by 15% across a 5,200+ unit regional fleet.
