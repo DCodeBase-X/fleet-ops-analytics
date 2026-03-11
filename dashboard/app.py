@@ -3,14 +3,16 @@ Fleet Operations Analytics Dashboard
 =====================================
 A Streamlit dashboard modeling the data-first operations approach
 used to reduce overtime costs by 23% and improve staffing efficiency
-by 15% across a 5,600+ unit regional fleet.
+by 15% across a 5,200+ unit regional fleet.
 
 Run:
     streamlit run dashboard/app.py
 """
 
 import os
-from click import option
+import sys
+import subprocess
+import datetime
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -19,7 +21,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-# ── Page config 
+# ── Page config
 st.set_page_config(
     page_title="Fleet Ops Analytics",
     page_icon="⚙︎",
@@ -27,9 +29,64 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Data loading 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+# ── Paths
+DATA_DIR     = os.path.join(os.path.dirname(__file__), "..", "data")
+GENERATE_SCRIPT = os.path.join(os.path.dirname(__file__), "..", "data", "generate_data.py")
+DATA_FILES   = {
+    "fleet_vehicles.csv":      "Fleet vehicles",
+    "daily_utilization.csv":   "Daily utilization",
+    "staff_overtime.csv":      "Staff overtime",
+    "maintenance_records.csv": "Maintenance records",
+}
 
+def _data_exists() -> bool:
+    return all(os.path.exists(os.path.join(DATA_DIR, f)) for f in DATA_FILES)
+
+def _run_generator():
+    with st.spinner("Generating fleet data… this may take a few minutes for 5,200 vehicles."):
+        result = subprocess.run(
+            [sys.executable, GENERATE_SCRIPT],
+            capture_output=True, text=True
+        )
+    if result.returncode != 0:
+        st.error(f"Generation failed:\n```\n{result.stderr}\n```")
+        st.stop()
+    st.cache_data.clear()
+    st.rerun()
+
+# ── Sidebar header
+st.sidebar.title("Fleet Ops Analytics")
+st.sidebar.caption("Data-first operations intelligence")
+st.sidebar.divider()
+
+# ── Data management
+st.sidebar.subheader("Data")
+
+if not _data_exists():
+    st.sidebar.warning("No data files found.")
+    st.sidebar.caption("Generate the dataset to get started.")
+    if st.sidebar.button("Generate Data", type="primary", use_container_width=True):
+        _run_generator()
+    st.info("No fleet data found. Use the **Generate Data** button in the sidebar to create it.")
+    st.stop()
+else:
+    # Show last-modified timestamp of the most recently written file
+    newest_mtime = max(
+        os.path.getmtime(os.path.join(DATA_DIR, f)) for f in DATA_FILES
+    )
+    last_generated = datetime.datetime.fromtimestamp(newest_mtime).strftime("%b %d, %Y %H:%M")
+    st.sidebar.caption(f"Last generated: {last_generated}")
+    with st.sidebar.expander("Regenerate data"):
+        st.caption(
+            "Replaces all CSV files with a fresh synthetic dataset. "
+            "Takes a few minutes at 5,200 vehicles."
+        )
+        if st.button("Regenerate Now", type="secondary", use_container_width=True):
+            _run_generator()
+
+st.sidebar.divider()
+
+# ── Data loading
 @st.cache_data(show_spinner="Loading fleet data…")
 def load_data():
     util  = pd.read_csv(f"{DATA_DIR}/daily_utilization.csv",  parse_dates=["date"])
@@ -38,16 +95,7 @@ def load_data():
     veh   = pd.read_csv(f"{DATA_DIR}/fleet_vehicles.csv",      parse_dates=["acquired_date"])
     return util, ot, maint, veh
 
-try:
-    util, ot, maint, veh = load_data()
-except FileNotFoundError as e:
-    st.error(f"**Data not found:** {e}. Run `python data/generate_data.py` first.")
-    st.stop()
-
-# ── Sidebar filters 
-st.sidebar.title("Fleet Ops Analytics")
-st.sidebar.caption("Data-first operations intelligence")
-st.sidebar.divider()
+util, ot, maint, veh = load_data()
 
 locations     = ["All Locations"] + sorted(util["location"].unique().tolist())
 selected_loc  = st.sidebar.selectbox("Location", locations)
@@ -198,14 +246,13 @@ with tab2:
                           xaxis_tickangle=-30, margin=dict(t=40, b=60))
         st.plotly_chart(fig, use_container_width=True)
 
-    # Weekly pattern
+    # Weekly pattern — includes weekend shifts present in summer months
     with col2:
         o_f_copy = o_f.copy()
         o_f_copy["day"] = o_f_copy["date"].dt.day_name()
-        day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
         ot_day = (
-            o_f_copy[o_f_copy["day"].isin(day_order)]
-            .groupby("day")["overtime_hours"].mean().reset_index()
+            o_f_copy.groupby("day")["overtime_hours"].mean().reset_index()
         )
         ot_day["day"] = pd.Categorical(ot_day["day"], categories=day_order, ordered=True)
         ot_day = ot_day.sort_values("day")
@@ -242,8 +289,8 @@ with tab2:
     )
     fig3.update_layout(
         title="Monthly Overtime Hours & Cost",
-        legend=dict(orientation="h", y=1.15),
-        margin=dict(t=60, b=0),
+        legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
+        margin=dict(t=60, b=80),
     )
     fig3.update_yaxes(title_text="OT Hours", secondary_y=False)
     fig3.update_yaxes(title_text="OT Cost ($)", secondary_y=True)
@@ -306,6 +353,27 @@ with tab3:
                        annotation_text="Target 80%")
         fig2.update_layout(coloraxis_showscale=False, margin=dict(t=40, b=0))
         st.plotly_chart(fig2, use_container_width=True)
+
+    # Seasonal demand by vehicle type — shows summer Compact/Mid-Size spike vs winter SUV/Truck rise
+    st.subheader("Seasonal Demand by Vehicle Type")
+    seasonal_type = (
+        u_f.assign(month=u_f["date"].dt.strftime("%b"),
+                   month_num=u_f["date"].dt.month)
+        .groupby(["month_num", "month", "vehicle_type"])["utilization_rate"]
+        .mean().reset_index()
+    )
+    seasonal_type["util_pct"] = seasonal_type["utilization_rate"] * 100
+    seasonal_type = seasonal_type.sort_values("month_num")
+
+    fig_s = px.line(
+        seasonal_type, x="month", y="util_pct", color="vehicle_type",
+        title="Avg Utilization by Vehicle Type — Seasonal Pattern (%)",
+        labels={"util_pct": "Utilization %", "month": "", "vehicle_type": "Type"},
+        markers=True,
+        color_discrete_sequence=["#4F46E5", "#818CF8", "#10B981", "#F59E0B", "#EF4444"],
+    )
+    fig_s.update_layout(margin=dict(t=40, b=0))
+    st.plotly_chart(fig_s, use_container_width=True)
 
     # Heat map — utilization by month × location
     st.subheader("Utilization Heatmap — Month × Location")
@@ -392,8 +460,8 @@ with tab4:
     )
     fig3.update_layout(
         title="Fleet Size Growth Over Time",
-        legend=dict(orientation="h", y=1.15),
-        margin=dict(t=60, b=0),
+        legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
+        margin=dict(t=60, b=80),
     )
     fig3.update_yaxes(title_text="Vehicles Added", secondary_y=False)
     fig3.update_yaxes(title_text="Cumulative Fleet Size", secondary_y=True)
