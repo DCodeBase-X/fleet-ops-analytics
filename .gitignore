@@ -31,3 +31,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Internal review docs (plans, specs, brainstorm sessions)
+docs/superpowers/
+.superpowers/
