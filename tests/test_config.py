@@ -24,6 +24,7 @@ def test_ot_status_green():
 
 
 def test_ot_status_amber():
+    assert ot_status(-0.05) == "amber"
     assert ot_status(0.0) == "amber"
     assert ot_status(0.14) == "amber"
 
