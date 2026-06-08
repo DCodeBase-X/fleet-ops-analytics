@@ -55,16 +55,13 @@ def apply_chart_style(
 
 def _util_colors(pct_series: pd.Series) -> list[str]:
     """Vectorized status color assignment for utilization percentages."""
-    return (
-        pd.cut(
-            pct_series,
-            bins=[0, 60, 80, float("inf")],
-            labels=[COLORS["red"], COLORS["amber"], COLORS["green"]],
-            right=False,
-        )
-        .astype(str)
-        .tolist()
+    result = pd.cut(
+        pct_series,
+        bins=[-1, 60, 80, float("inf")],
+        labels=[COLORS["red"], COLORS["amber"], COLORS["green"]],
+        right=False,
     )
+    return [COLORS["red"] if pd.isna(c) else str(c) for c in result]
 
 
 def kpi_html(
@@ -239,6 +236,7 @@ def make_ot_monthly(df: pd.DataFrame, end: pd.Timestamp) -> go.Figure:
             fillcolor=COLORS["amber"], opacity=0.07, layer="below", line_width=0,
         )
     apply_chart_style(fig, "Monthly Overtime Hours & Cost")
+    fig.update_yaxes(showgrid=False, secondary_y=True)
     fig.update_layout(
         legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
         margin=dict(t=65, b=60, l=0, r=10),
@@ -349,7 +347,7 @@ def make_util_heatmap(df: pd.DataFrame) -> go.Figure:
         aspect="auto",
         labels=dict(x="Month", y="Location", color="Util %"),
     )
-    apply_chart_style(
+    fig = apply_chart_style(
         fig,
         "Utilization Heatmap — Month × Location",
         "Red = low utilization · Green = high · Scale anchored 50–100%",
@@ -407,12 +405,13 @@ def make_maint_trend(df: pd.DataFrame, end: pd.Timestamp) -> go.Figure:
         annotation_text="Summer", annotation_position="top left",
         annotation_font=dict(size=10, color=COLORS["amber"]),
     )
-    fig.add_vrect(
-        x0="2023-11-01", x1="2024-03-01",
-        fillcolor=COLORS["blue"], opacity=0.05, layer="below", line_width=0,
-        annotation_text="Winter", annotation_position="top left",
-        annotation_font=dict(size=10, color=COLORS["blue"]),
-    )
+    if end >= pd.Timestamp("2023-11-01"):
+        fig.add_vrect(
+            x0="2023-11-01", x1="2024-03-01",
+            fillcolor=COLORS["blue"], opacity=0.05, layer="below", line_width=0,
+            annotation_text="Winter", annotation_position="top left",
+            annotation_font=dict(size=10, color=COLORS["blue"]),
+        )
     fig.update_layout(showlegend=False)
     return apply_chart_style(
         fig, "Monthly Maintenance Spend ($)",
@@ -444,6 +443,7 @@ def make_fleet_growth(veh: pd.DataFrame) -> go.Figure:
         secondary_y=True,
     )
     apply_chart_style(fig, "Fleet Growth Trajectory", "Monthly acquisitions vs cumulative fleet size")
+    fig.update_yaxes(showgrid=False, secondary_y=True)
     fig.update_layout(
         legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
         margin=dict(t=65, b=60, l=0, r=10),
