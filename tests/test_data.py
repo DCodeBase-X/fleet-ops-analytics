@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from datetime import date
 from dashboard.data import FleetData, KPISet, filter_data, compute_kpis
+from dashboard.config import OT_PREMIUM
 
 
 def _make_util(rows: list[dict]) -> pd.DataFrame:
@@ -96,7 +97,7 @@ def test_compute_kpis_ot_cost():
     filtered = filter_data(data, "All Locations", start, end)
     kpis = compute_kpis(data, filtered)
     assert kpis.total_ot_hrs == pytest.approx(6.0)
-    assert kpis.ot_cost == pytest.approx(6.0 * 28.0)
+    assert kpis.ot_cost == pytest.approx(6.0 * OT_PREMIUM)
 
 
 def test_compute_kpis_avg_util():

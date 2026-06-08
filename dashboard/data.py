@@ -38,10 +38,10 @@ def data_exists() -> bool:
 
 @st.cache_data(ttl=3600, show_spinner="Loading fleet data…")
 def load_data() -> FleetData:
-    util = pd.read_csv(f"{DATA_DIR}/daily_utilization.csv", parse_dates=["date"])
-    ot = pd.read_csv(f"{DATA_DIR}/staff_overtime.csv", parse_dates=["date"])
-    maint = pd.read_csv(f"{DATA_DIR}/maintenance_records.csv", parse_dates=["date"])
-    veh = pd.read_csv(f"{DATA_DIR}/fleet_vehicles.csv", parse_dates=["acquired_date"])
+    util = pd.read_csv(os.path.join(DATA_DIR, "daily_utilization.csv"), parse_dates=["date"])
+    ot = pd.read_csv(os.path.join(DATA_DIR, "staff_overtime.csv"), parse_dates=["date"])
+    maint = pd.read_csv(os.path.join(DATA_DIR, "maintenance_records.csv"), parse_dates=["date"])
+    veh = pd.read_csv(os.path.join(DATA_DIR, "fleet_vehicles.csv"), parse_dates=["acquired_date"])
 
     util = util.copy()
     util["utilization_pct"] = util["utilization_rate"] * 100
@@ -81,20 +81,20 @@ def filter_data(
 
 
 def compute_kpis(data: FleetData, filtered: FleetData) -> KPISet:
-    avg_util = filtered.util["utilization_pct"].mean()
-    baseline_util = data.util["utilization_pct"].mean()
+    avg_util = filtered.util["utilization_pct"].mean() if not filtered.util.empty else 0.0
+    baseline_util = data.util["utilization_pct"].mean() if not data.util.empty else 0.0
 
-    total_ot_hrs = filtered.ot["overtime_hours"].sum()
+    total_ot_hrs = filtered.ot["overtime_hours"].sum() if not filtered.ot.empty else 0.0
     ot_cost = total_ot_hrs * OT_PREMIUM
 
     months_filtered = max(filtered.ot["month_period"].nunique(), 1)
     months_total = max(data.ot["month_period"].nunique(), 1)
     avg_monthly = ot_cost / months_filtered
-    baseline_monthly = (data.ot["overtime_hours"].sum() * OT_PREMIUM) / months_total
+    baseline_monthly = (data.ot["overtime_hours"].sum() * OT_PREMIUM) / months_total if not data.ot.empty else 0.0
     ratio = (avg_monthly - baseline_monthly) / baseline_monthly if baseline_monthly > 0 else 0.0
 
-    avg_ot_shift = filtered.ot["overtime_hours"].mean()
-    baseline_ot = data.ot["overtime_hours"].mean()
+    avg_ot_shift = filtered.ot["overtime_hours"].mean() if not filtered.ot.empty else 0.0
+    baseline_ot = data.ot["overtime_hours"].mean() if not data.ot.empty else 0.0
     shift_delta = avg_ot_shift - baseline_ot
 
     return KPISet(
