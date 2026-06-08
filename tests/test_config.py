@@ -49,3 +49,15 @@ def test_all_color_values_are_hex():
 def test_ot_premium_is_float():
     assert isinstance(OT_PREMIUM, float)
     assert OT_PREMIUM > 0
+
+
+def test_css_uses_ibm_plex_sans():
+    from dashboard.config import DARK_THEME_CSS
+    assert "IBM Plex Sans" in DARK_THEME_CSS
+    assert "Inter" not in DARK_THEME_CSS
+
+
+def test_css_uses_ibm_plex_mono():
+    from dashboard.config import DARK_THEME_CSS
+    assert "IBM Plex Mono" in DARK_THEME_CSS
+    assert "JetBrains Mono" not in DARK_THEME_CSS

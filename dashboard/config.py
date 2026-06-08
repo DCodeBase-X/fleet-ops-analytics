@@ -51,10 +51,10 @@ def ot_status(ratio: float) -> str:
 # ── Dark theme CSS (injected once in app.py)
 DARK_THEME_CSS = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap');
 
 html, body, [class*="css"] {{
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background-color: {COLORS["bg_base"]};
     color: {COLORS["text_primary"]};
 }}
@@ -123,7 +123,7 @@ footer {{ visibility: hidden; }}
     margin-bottom: 8px;
 }}
 .kpi-value {{
-    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
     font-size: 24px;
     font-weight: 700;
     color: {COLORS["text_primary"]};
@@ -131,7 +131,7 @@ footer {{ visibility: hidden; }}
     letter-spacing: -0.5px;
 }}
 .kpi-delta {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
     margin-top: 6px;
     color: {COLORS["text_secondary"]};

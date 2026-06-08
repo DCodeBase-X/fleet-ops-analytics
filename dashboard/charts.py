@@ -24,17 +24,17 @@ def apply_chart_style(
     fig.update_layout(
         title=dict(
             text=title_text,
-            font=dict(size=14, color=COLORS["text_primary"], family="Inter, sans-serif"),
+            font=dict(size=14, color=COLORS["text_primary"], family="IBM Plex Sans, sans-serif"),
             x=0, xanchor="left",
         ),
-        font=dict(family="Inter, sans-serif", size=12, color=COLORS["text_secondary"]),
+        font=dict(family="IBM Plex Sans, sans-serif", size=12, color=COLORS["text_secondary"]),
         plot_bgcolor=COLORS["bg_card"],
         paper_bgcolor="rgba(0,0,0,0)",
         margin=dict(t=65, b=20, l=0, r=10),
         hoverlabel=dict(
             bgcolor=COLORS["bg_card"],
             font_size=12,
-            font_family="JetBrains Mono, monospace",
+            font_family="IBM Plex Mono, monospace",
             bordercolor=COLORS["border"],
         ),
     )

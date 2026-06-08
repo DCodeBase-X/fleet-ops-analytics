@@ -132,3 +132,19 @@ def test_make_maint_trend_returns_figure():
 
 def test_make_fleet_growth_returns_figure():
     assert isinstance(make_fleet_growth(_veh_df()), go.Figure)
+
+
+def test_chart_style_uses_ibm_plex_sans():
+    fig = go.Figure()
+    apply_chart_style(fig, "Test")
+    layout = fig.layout
+    assert "IBM Plex Sans" in layout.font.family
+    assert "Inter" not in layout.font.family
+
+
+def test_chart_style_uses_ibm_plex_mono():
+    fig = go.Figure()
+    apply_chart_style(fig, "Test")
+    layout = fig.layout
+    assert "IBM Plex Mono" in layout.hoverlabel.font.family
+    assert "JetBrains Mono" not in layout.hoverlabel.font.family
