@@ -169,15 +169,14 @@ with tab3:
     st.header("Fleet Efficiency")
     st.caption("Vehicle utilization rates, seasonal demand shifts, and idle asset identification.")
 
-    per_veh = filtered.util.groupby("vehicle_id")["utilization_pct"].mean()
     u1, u2, u3 = st.columns(3)
     u1.markdown(kpi_html("Avg Utilization", f"{kpis.avg_util:.1f}%", status="blue"), unsafe_allow_html=True)
     u2.markdown(kpi_html(
-        "Vehicles > 90% Util", f"{(per_veh >= 90).sum():,}",
+        "Vehicles > 90% Util", f"{kpis.vehicles_over_90:,}",
         delta_text="high-demand assets", status="blue",
     ), unsafe_allow_html=True)
     u3.markdown(kpi_html(
-        "Vehicles < 50% Util", f"{(per_veh < 50).sum():,}",
+        "Vehicles < 50% Util", f"{kpis.vehicles_under_50:,}",
         delta_text="reallocation candidates", status="amber",
     ), unsafe_allow_html=True)
 
@@ -207,7 +206,7 @@ with tab4:
     c1.markdown(kpi_html("Maintenance Spend", f"${kpis.total_maint:,.0f}", status="blue"), unsafe_allow_html=True)
     c2.markdown(kpi_html("Maintenance Events", f"{len(filtered.maint):,}", status="blue"), unsafe_allow_html=True)
     c3.markdown(kpi_html(
-        "Total Downtime Days", f"{filtered.maint['downtime_days'].sum():,.0f}",
+        "Total Downtime Days", f"{kpis.total_downtime_days:,}",
         delta_text="days of fleet unavailability", status="amber",
     ), unsafe_allow_html=True)
 

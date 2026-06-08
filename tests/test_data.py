@@ -89,6 +89,9 @@ def test_compute_kpis_fleet_count():
     filtered = filter_data(data, "All Locations", start, end)
     kpis = compute_kpis(data, filtered)
     assert kpis.fleet_count == 2
+    assert isinstance(kpis.vehicles_over_90, int)
+    assert isinstance(kpis.vehicles_under_50, int)
+    assert isinstance(kpis.total_downtime_days, int)
 
 
 def test_compute_kpis_ot_cost():

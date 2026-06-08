@@ -30,6 +30,9 @@ class KPISet:
     avg_ot_shift: float
     shift_delta: float
     shift_status: str
+    vehicles_over_90: int
+    vehicles_under_50: int
+    total_downtime_days: int
 
 
 def data_exists() -> bool:
@@ -97,6 +100,11 @@ def compute_kpis(data: FleetData, filtered: FleetData) -> KPISet:
     baseline_ot = data.ot["overtime_hours"].mean() if not data.ot.empty else 0.0
     shift_delta = avg_ot_shift - baseline_ot
 
+    per_veh = filtered.util.groupby("vehicle_id")["utilization_pct"].mean() if not filtered.util.empty else pd.Series(dtype=float)
+    vehicles_over_90 = int((per_veh >= 90).sum())
+    vehicles_under_50 = int((per_veh < 50).sum())
+    total_downtime_days = int(filtered.maint["downtime_days"].sum()) if not filtered.maint.empty else 0
+
     return KPISet(
         fleet_count=int(filtered.util["vehicle_id"].nunique()),
         avg_util=float(avg_util),
@@ -110,4 +118,7 @@ def compute_kpis(data: FleetData, filtered: FleetData) -> KPISet:
         avg_ot_shift=float(avg_ot_shift),
         shift_delta=float(shift_delta),
         shift_status="green" if shift_delta < 0 else ("amber" if shift_delta < 0.5 else "red"),
+        vehicles_over_90=vehicles_over_90,
+        vehicles_under_50=vehicles_under_50,
+        total_downtime_days=total_downtime_days,
     )
