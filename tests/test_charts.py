@@ -1,9 +1,8 @@
 # tests/test_charts.py
 import pandas as pd
 import plotly.graph_objects as go
-import pytest
 from dashboard.charts import (
-    apply_chart_style, kpi_html, insight,
+    apply_chart_style, kpi_html,
     make_util_trend, make_ot_by_location, make_ot_by_role,
     make_ot_daily, make_ot_monthly, make_util_by_type,
     make_util_by_location, make_seasonal_by_type,
